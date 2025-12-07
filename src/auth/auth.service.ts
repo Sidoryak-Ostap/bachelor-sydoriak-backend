@@ -6,9 +6,9 @@ import {
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { OAuth2Client } from 'google-auth-library';
-import { LoginDto, SignUpDto } from './auth.dto';
+import { GoogleAuthDto, LoginDto, SignUpDto } from './auth.dto';
 import { User } from 'src/users/schemas/user.schema';
+import axios from 'axios';
 
 interface ILoginResponse {
   message?: string;
@@ -19,8 +19,6 @@ interface ILoginResponse {
 
 @Injectable()
 export class AuthService {
-  private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -88,35 +86,30 @@ export class AuthService {
     };
   }
 
-  async loginWithGoogleToken(idToken: string) {
+  // Google Login
+  async googleLogin(dto: GoogleAuthDto) {
     try {
-      // 1️⃣ Verify token with Google
-      const ticket = await this.googleClient.verifyIdToken({
-        idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
+      const googleRes = await axios.get(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: { Authorization: `Bearer ${dto.access_token}` },
+        },
+      );
 
-      if (!payload || !payload.email) {
-        throw new BadRequestException('Invalid Google token payload');
-      }
+      const profile = googleRes.data;
 
-      const { email, name } = payload;
-
-      // 2️⃣ Find or create user
-      let user = await this.usersService.findByEmail(email);
+      let user = await this.usersService.findByEmail(profile.email);
 
       if (!user) {
-        user = await this.usersService.create({
-          name,
-          email,
-          provider: 'google',
-          role: 'user',
-          isActive: true,
-        });
+        throw new BadRequestException('User not found. Please sign up first');
       }
 
-      // 3️⃣ Generate JWT
+      if (user.provider !== 'google') {
+        throw new BadRequestException(
+          'Please log in using your email/password',
+        );
+      }
+
       const tokenPayload = {
         sub: user._id,
         email: user.email,
@@ -139,10 +132,58 @@ export class AuthService {
       };
     } catch (err) {
       console.error(err);
-      throw new UnauthorizedException('Invalid Google token');
+      throw new BadRequestException('Something went wrong');
     }
   }
 
+  // Google Sign-up
+  async googleSignUp(dto: GoogleAuthDto) {
+    try {
+      const googleRes = await axios.get(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: { Authorization: `Bearer ${dto.access_token}` },
+        },
+      );
+      const profile = googleRes.data;
+      let user = await this.usersService.findByEmail(profile.email);
+
+      if (user) {
+        throw new BadRequestException('User already exists. Please log in');
+      }
+      user = await this.usersService.create({
+        email: profile.email,
+        provider: 'google',
+        role: 'user',
+        isActive: true,
+      });
+
+      const tokenPayload = {
+        sub: user._id,
+        email: user.email,
+        role: user.role,
+      };
+      const access_token = await this.jwtService.signAsync(tokenPayload);
+      const refresh_token = await this.jwtService.signAsync(
+        { sub: user._id },
+        {
+          secret: process.env.JWT_REFRESH_SECRET,
+          expiresIn: '7d',
+        },
+      );
+      return {
+        message: 'User registered with Google successfully',
+        access_token,
+        refresh_token,
+        user,
+      };
+    } catch (err) {
+      console.error(err);
+      throw new BadRequestException(err.message || 'Something went wrong');
+    }
+  }
+
+  // Refresh Access Token
   async refreshAccessToken(
     refreshToken: string,
   ): Promise<{ access_token: string }> {

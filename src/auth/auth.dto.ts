@@ -20,7 +20,7 @@ export class LoginDto {
   password: string;
 }
 
-export class GoogleLoginDto {
+export class GoogleAuthDto {
   @IsString()
-  id_token: string;
+  access_token: string;
 }

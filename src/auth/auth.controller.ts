@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { GoogleLoginDto, LoginDto, SignUpDto } from './auth.dto';
+import { GoogleAuthDto, LoginDto, SignUpDto } from './auth.dto';
 import type { Response, Request } from 'express';
 
 @Controller('auth')
@@ -48,13 +48,29 @@ export class AuthController {
     return rest;
   }
 
-  @Post('google')
+  @Post('google-login')
   async googleLogin(
-    @Body() dto: GoogleLoginDto,
+    @Body() dto: GoogleAuthDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { refresh_token, ...rest } =
-      await this.authService.loginWithGoogleToken(dto.id_token);
+    const { refresh_token, ...rest } = await this.authService.googleLogin(dto);
+
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return rest;
+  }
+
+  @Post('google-signup')
+  async googleSignUp(
+    @Body() dto: GoogleAuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refresh_token, ...rest } = await this.authService.googleSignUp(dto);
 
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
