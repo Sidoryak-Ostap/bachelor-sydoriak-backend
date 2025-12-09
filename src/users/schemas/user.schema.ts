@@ -13,6 +13,15 @@ export class User extends Document {
   @Prop({ required: false, select: false })
   password: string;
 
+  @Prop({ required: false, select: false })
+  resetCode: string;
+
+  @Prop({ type: Date, required: false, select: false })
+  resetCodeExpires: Date | null;
+
+  @Prop({ required: false })
+  isResetCodeVerified: boolean;
+
   @Prop({ enum: ['local', 'google'], default: 'local' })
   provider: 'local' | 'google';
 

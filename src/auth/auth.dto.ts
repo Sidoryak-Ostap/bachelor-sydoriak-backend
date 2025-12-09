@@ -24,3 +24,10 @@ export class GoogleAuthDto {
   @IsString()
   access_token: string;
 }
+
+export class VerifyCodeDto {
+  @IsEmail()
+  email: string;
+  @IsString()
+  code: string;
+}

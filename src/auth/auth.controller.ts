@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { GoogleAuthDto, LoginDto, SignUpDto } from './auth.dto';
+import { GoogleAuthDto, LoginDto, SignUpDto, VerifyCodeDto } from './auth.dto';
 import type { Response, Request } from 'express';
 
 @Controller('auth')
@@ -92,5 +92,20 @@ export class AuthController {
       await this.authService.refreshAccessToken(refreshToken);
 
     return { access_token };
+  }
+
+  @Post('send-code')
+  async sendCode(@Body('email') email: string) {
+    return this.authService.sendCode(email);
+  }
+
+  @Post('verify-code')
+  async verifyCode(@Body() dto: VerifyCodeDto) {
+    return this.authService.verifyCode(dto);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() dto: { email: string; newPassword: string }) {
+    return this.authService.resetPassword(dto);
   }
 }
