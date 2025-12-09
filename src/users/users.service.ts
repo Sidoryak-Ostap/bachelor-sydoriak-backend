@@ -17,7 +17,10 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).select('+password').exec();
+    return this.userModel
+      .findOne({ email })
+      .select('+resetCode +resetCodeExpires +password')
+      .exec();
   }
 
   async deleteById(id: string): Promise<User | null> {
@@ -25,6 +28,11 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<User | null> {
+    ``;
     return this.userModel.findById(id).exec();
+  }
+
+  async update(id: string, data: Partial<User>): Promise<User | null> {
+    return this.userModel.findByIdAndUpdate(id, data).exec();
   }
 }

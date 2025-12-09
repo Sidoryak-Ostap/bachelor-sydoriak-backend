@@ -35,6 +35,7 @@
     "cookie-parser": "^1.4.7",
     "google-auth-library": "^10.5.0",
     "mongoose": "^8.19.3",
+    "nodemailer": "^7.0.11",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
