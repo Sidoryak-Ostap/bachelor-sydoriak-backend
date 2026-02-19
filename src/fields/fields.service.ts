@@ -3,6 +3,7 @@ import { Field, FieldDocument } from './schemas/field.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateFieldDto, UpdateFieldDto } from './field.dto';
+import { log } from 'console';
 
 @Injectable()
 export class FieldsService {
@@ -25,8 +26,8 @@ export class FieldsService {
     return this.fieldModel.find({ userId }).exec();
   }
 
-  async getFieldById(id: string): Promise<Field> {
-    const field = await this.fieldModel.findById(id).exec();
+  async getFieldById(id: string, userId: string): Promise<Field> {
+    const field = await this.fieldModel.findOne({ _id: id, userId }).exec();
 
     if (!field) {
       throw new NotFoundException(`Field with ID ${id} not found`);
