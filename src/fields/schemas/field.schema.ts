@@ -3,7 +3,17 @@ import mongoose, { HydratedDocument } from 'mongoose';
 
 export type FieldDocument = HydratedDocument<Field>;
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: (doc, ret) => {
+      delete (ret as any)._id; // The 'id' virtual is automatically included
+      return ret;
+    },
+  },
+})
 export class Field {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
@@ -52,3 +62,7 @@ export class Field {
 }
 
 export const FieldSchema = SchemaFactory.createForClass(Field);
+
+FieldSchema.virtual('id').get(function (this: FieldDocument) {
+  return this._id.toHexString();
+});

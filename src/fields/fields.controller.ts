@@ -21,8 +21,6 @@ export class FieldsController {
 
   @Post()
   async createField(@Body() dto: CreateFieldDto, @User() user: ActiveUser) {
-    console.log(dto, user);
-
     return this.fieldService.createField(dto, user.userId);
   }
 
@@ -32,8 +30,8 @@ export class FieldsController {
   }
 
   @Get('field/:id')
-  async getFieldById(@Param('id') id: string) {
-    return this.fieldService.getFieldById(id);
+  async getFieldById(@Param('id') id: string, @User() user: ActiveUser) {
+    return this.fieldService.getFieldById(id, user.userId);
   }
 
   @Patch('field/:id')
