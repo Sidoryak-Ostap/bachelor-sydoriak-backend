@@ -3,13 +3,20 @@ import mongoose, { HydratedDocument } from 'mongoose';
 
 export type ActivityDocument = HydratedDocument<FieldActivity>;
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: (doc, ret) => {
+      delete (ret as any)._id;
+      return ret;
+    },
+  },
+})
 export class FieldActivity {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Field', required: true })
   fieldId: mongoose.Types.ObjectId;
-
-  @Prop({ required: true })
-  type: string;
 
   @Prop({ required: true })
   description: string;
@@ -22,3 +29,7 @@ export class FieldActivity {
 }
 
 export const FieldActivitySchema = SchemaFactory.createForClass(FieldActivity);
+
+FieldActivitySchema.virtual('id').get(function (this: ActivityDocument) {
+  return this._id.toHexString();
+});

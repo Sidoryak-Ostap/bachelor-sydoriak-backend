@@ -5,9 +5,6 @@ export class CreateFieldActivityDto {
   fieldId: string;
 
   @IsString()
-  type: string;
-
-  @IsString()
   description: string;
 
   @IsDateString()
