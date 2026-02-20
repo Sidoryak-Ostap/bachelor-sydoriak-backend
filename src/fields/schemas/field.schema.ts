@@ -9,7 +9,7 @@ export type FieldDocument = HydratedDocument<Field>;
     virtuals: true,
     versionKey: false,
     transform: (doc, ret) => {
-      delete (ret as any)._id; // The 'id' virtual is automatically included
+      delete (ret as any)._id;
       return ret;
     },
   },

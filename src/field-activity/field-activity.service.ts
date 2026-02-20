@@ -43,17 +43,20 @@ export class FieldActivityService {
   ): Promise<FieldActivity[]> {
     return this.fieldActivityModel
       .find({ fieldId, userId })
-      .sort({ createdAt: -1 })
+      .sort({ date: -1 })
       .exec();
   }
 
-  async deleteActivityById(activityId: string, userId: string): Promise<void> {
+  async deleteActivitiesByIds(
+    activityIds: string[],
+    userId: string,
+  ): Promise<void> {
     const result = await this.fieldActivityModel
-      .findOneAndDelete({ _id: activityId, userId })
+      .deleteMany({ _id: { $in: activityIds }, userId })
       .exec();
 
-    if (!result) {
-      throw new NotFoundException(`Activity with ID ${activityId} not found`);
+    if (result.deletedCount === 0) {
+      throw new NotFoundException(`No activities found for deletion`);
     }
 
     return;

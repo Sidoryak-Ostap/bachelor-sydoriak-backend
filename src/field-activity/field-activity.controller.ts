@@ -34,13 +34,13 @@ export class FieldActivityController {
     return this.fieldActivityService.getActivitiesByField(fieldId, user.userId);
   }
 
-  @Delete('/:activityId')
-  async deleteActivityById(
-    @Param('activityId') activityId: string,
+  @Delete()
+  async deleteActivitiesByIds(
+    @Body('activityIds') activityIds: string[],
     @User() user: ActiveUser,
   ) {
-    return this.fieldActivityService.deleteActivityById(
-      activityId,
+    return this.fieldActivityService.deleteActivitiesByIds(
+      activityIds,
       user.userId,
     );
   }
