@@ -7,14 +7,15 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleAuthDto, LoginDto, SignUpDto, VerifyCodeDto } from './auth.dto';
-import { User } from 'src/users/schemas/user.schema';
+import { User, UserDocument } from 'src/users/schemas/user.schema';
 import * as nodemailer from 'nodemailer';
 import axios from 'axios';
+import { ConfigService } from '@nestjs/config';
 
 interface ILoginResponse {
   message?: string;
-  access_token: string;
-  refresh_token: string;
+  accessToken: string;
+  refreshToken: string;
   user: User;
 }
 
@@ -25,6 +26,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -52,7 +54,7 @@ export class AuthService {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new BadRequestException('User already exists');
 
-    const user = await this.usersService.create({
+    const user: UserDocument = await this.usersService.create({
       email: dto.email,
       password: dto.password,
       provider: 'local',
@@ -60,21 +62,11 @@ export class AuthService {
       isActive: true,
     });
 
-    const payload = { sub: user._id, email: user.email, role: user.role };
-    const access_token = await this.jwtService.signAsync(payload);
-
-    const refresh_token = await this.jwtService.signAsync(
-      { sub: user._id },
-      {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: '7d',
-      },
-    );
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
 
     return {
       message: 'User registered successfully',
-      access_token,
-      refresh_token,
+      ...tokens,
       user,
     };
   }
@@ -92,20 +84,11 @@ export class AuthService {
 
     if (!isMatch) throw new BadRequestException('Incorrect email or password');
 
-    const payload = { sub: user._id, email: user.email, role: user.role };
-    const access_token = await this.jwtService.signAsync(payload);
-    const refresh_token = await this.jwtService.signAsync(
-      { sub: user._id },
-      {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: '7d',
-      },
-    );
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
 
     return {
-      access_token,
+      ...tokens,
       user,
-      refresh_token,
     };
   }
 
@@ -133,24 +116,11 @@ export class AuthService {
         );
       }
 
-      const tokenPayload = {
-        sub: user._id,
-        email: user.email,
-        role: user.role,
-      };
-      const access_token = await this.jwtService.signAsync(tokenPayload);
-      const refresh_token = await this.jwtService.signAsync(
-        { sub: user._id },
-        {
-          secret: process.env.JWT_REFRESH_SECRET,
-          expiresIn: '7d',
-        },
-      );
+      const tokens = await this.generateTokens(user.id, user.email, user.role);
 
       return {
         message: 'Logged in with Google successfully',
-        access_token,
-        refresh_token,
+        ...tokens,
         user,
       };
     } catch (err) {
@@ -181,53 +151,16 @@ export class AuthService {
         isActive: true,
       });
 
-      const tokenPayload = {
-        sub: user._id,
-        email: user.email,
-        role: user.role,
-      };
-      const access_token = await this.jwtService.signAsync(tokenPayload);
-      const refresh_token = await this.jwtService.signAsync(
-        { sub: user._id },
-        {
-          secret: process.env.JWT_REFRESH_SECRET,
-          expiresIn: '7d',
-        },
-      );
+      const tokens = await this.generateTokens(user.id, user.email, user.role);
+
       return {
         message: 'User registered with Google successfully',
-        access_token,
-        refresh_token,
+        ...tokens,
         user,
       };
     } catch (err) {
       console.error(err);
       throw new BadRequestException(err.message || 'Something went wrong');
-    }
-  }
-
-  // Refresh Access Token
-  async refreshAccessToken(
-    refreshToken: string,
-  ): Promise<{ access_token: string }> {
-    try {
-      const payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
-      });
-      const user = await this.usersService.findById(payload.sub);
-
-      if (!user) {
-        throw new UnauthorizedException('Invalid refresh token payload');
-      }
-
-      const newAccessToken = await this.jwtService.signAsync({
-        sub: user._id,
-        email: user.email,
-        role: user.role,
-      });
-      return { access_token: newAccessToken };
-    } catch (e) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
 
@@ -243,7 +176,7 @@ export class AuthService {
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000);
 
-    await this.usersService.update(user._id as string, {
+    await this.usersService.update(user.id, {
       resetCode: code,
       resetCodeExpires: expires,
     });
@@ -274,7 +207,7 @@ export class AuthService {
       throw new BadRequestException('Reset code has expired');
     }
 
-    await this.usersService.update(user._id as string, {
+    await this.usersService.update(user.id, {
       isResetCodeVerified: true,
     });
 
@@ -295,7 +228,7 @@ export class AuthService {
     }
 
     if (user.resetCodeExpires! < new Date()) {
-      await this.usersService.update(user._id as string, {
+      await this.usersService.update(user.id, {
         resetCode: '',
         resetCodeExpires: null,
         isResetCodeVerified: false,
@@ -304,19 +237,57 @@ export class AuthService {
       throw new BadRequestException('Reset code has expired');
     }
 
-    const salt = await bcrypt.genSalt(
-      parseInt(process.env.SALT_ROUNDS || '10'),
-    );
+    // const salt = await bcrypt.genSalt(
+    //   parseInt(process.env.SALT_ROUNDS || '10'),
+    // );
 
-    const hashed = await bcrypt.hash(newPassword, salt);
+    // const hashed = await bcrypt.hash(newPassword, salt);
 
-    await this.usersService.update(user._id as string, {
-      password: hashed,
+    await this.usersService.update(user.id, {
+      password: newPassword,
       resetCode: '',
       resetCodeExpires: null,
       isResetCodeVerified: false,
     });
 
     return { message: 'Password reset successfully' };
+  }
+
+  async generateTokens(userId: string, email: string, role: string) {
+    const payload = { sub: userId, email, role };
+
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get('JWT_ACCESS_SECRET'),
+        expiresIn: '15m',
+      }),
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+        expiresIn: '7d',
+      }),
+    ]);
+
+    return { accessToken, refreshToken };
+  }
+
+  async refreshTokens(refreshToken: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
+
+      const user = await this.usersService.findById(payload.sub);
+      if (!user) throw new UnauthorizedException('User no longer exists');
+
+      const tokens = await this.generateTokens(user.id, user.email, user.role);
+
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user,
+      };
+    } catch (e) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
   }
 }

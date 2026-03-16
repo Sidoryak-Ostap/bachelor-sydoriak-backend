@@ -9,11 +9,13 @@ import {
 } from '@nestjs/common';
 import { FieldActivityService } from './field-activity.service';
 import { CreateFieldActivityDto } from './field-activity.dto';
-import { User } from 'src/users/decorators/user.decorator';
-import type { ActiveUser } from 'src/users/decorators/active-user.interface';
-import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { type UserDocument } from 'src/users/schemas/user.schema';
 
-@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('field-activity')
 export class FieldActivityController {
   constructor(private readonly fieldActivityService: FieldActivityService) {}
@@ -21,27 +23,27 @@ export class FieldActivityController {
   @Post()
   async createActivity(
     @Body() dto: CreateFieldActivityDto,
-    @User() user: ActiveUser,
+    @GetUser() user: UserDocument,
   ) {
-    return this.fieldActivityService.createActivity(dto, user.userId);
+    return this.fieldActivityService.createActivity(dto, user.id);
   }
 
   @Get('/:fieldId')
   async getActivitiesByField(
     @Param('fieldId') fieldId: string,
-    @User() user: ActiveUser,
+    @GetUser() user: UserDocument,
   ) {
-    return this.fieldActivityService.getActivitiesByField(fieldId, user.userId);
+    return this.fieldActivityService.getActivitiesByField(fieldId, user.id);
   }
 
   @Delete()
   async deleteActivitiesByIds(
     @Body('activityIds') activityIds: string[],
-    @User() user: ActiveUser,
+    @GetUser() user: UserDocument,
   ) {
     return this.fieldActivityService.deleteActivitiesByIds(
       activityIds,
-      user.userId,
+      user.id,
     );
   }
 }
