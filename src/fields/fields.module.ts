@@ -10,6 +10,6 @@ import { Field, FieldSchema } from './schemas/field.schema';
   ],
   controllers: [FieldsController],
   providers: [FieldsService],
-  exports: [MongooseModule],
+  exports: [FieldsService, MongooseModule],
 })
 export class FieldsModule {}
