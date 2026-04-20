@@ -43,6 +43,27 @@ export class User extends Document {
     _id: false,
   })
   profile: Record<string, any>;
+
+  @Prop({
+    type: {
+      language: { type: String, default: 'en' },
+      timezone: { type: String, default: 'UTC' },
+      autoAreaCalculation: { type: Boolean, default: true },
+      emailUpdates: { type: Boolean, default: true },
+      weeklySummary: { type: Boolean, default: false },
+      marketingNews: { type: Boolean, default: false },
+    },
+    _id: false,
+    default: () => ({}),
+  })
+  settings: {
+    language: string;
+    timezone: string;
+    autoAreaCalculation: boolean;
+    emailUpdates: boolean;
+    weeklySummary: boolean;
+    marketingNews: boolean;
+  };
 }
 
 export type UserDocument = HydratedDocument<User>;

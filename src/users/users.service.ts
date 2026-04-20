@@ -2,8 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { User, UserDocument } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { UpdateProfileDto } from './updateProfileDTO';
+import { UpdateProfileDto } from './DTO/updateProfileDTO';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { UpdateSettingsDto } from './DTO/updateSettingsDTO';
 
 @Injectable()
 export class UsersService {
@@ -71,6 +72,26 @@ export class UsersService {
 
     if (!updatedUser) {
       throw new NotFoundException('User not found');
+    }
+
+    return updatedUser;
+  }
+
+  async updateSettings(userId: string, settings: UpdateSettingsDto) {
+    const updateData = {};
+
+    Object.entries(settings).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateData[`settings.${key}`] = value;
+      }
+    });
+
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(userId, { $set: updateData }, { new: true })
+      .exec();
+
+    if (!updatedUser) {
+      throw new NotFoundException('Користувача не знайдено');
     }
 
     return updatedUser;
