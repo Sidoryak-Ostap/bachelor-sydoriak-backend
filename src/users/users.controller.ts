@@ -44,6 +44,7 @@ export class UsersController {
     @Body() dto: UpdateSettingsDto,
   ) {
     const userId = user.id;
+
     return this.usersService.updateSettings(userId, dto);
   }
 }
