@@ -21,7 +21,11 @@ import { type UserDocument } from './schemas/user.schema';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
   @Patch('profile')
   async updateProfile(
     @GetUser() user: UserDocument,
