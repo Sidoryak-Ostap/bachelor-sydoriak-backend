@@ -9,6 +9,7 @@ import { FieldsModule } from './fields/fields.module';
 import { FieldActivityModule } from './field-activity/field-activity.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { StatisticsModule } from './statistics/statistics.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { StatisticsModule } from './statistics/statistics.module';
     AuthModule,
     CloudinaryModule,
     StatisticsModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
