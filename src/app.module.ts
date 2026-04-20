@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { FieldsModule } from './fields/fields.module';
 import { FieldActivityModule } from './field-activity/field-activity.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { FieldActivityModule } from './field-activity/field-activity.module';
     FieldsModule,
     FieldActivityModule,
     AuthModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
