@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Patch,
+  Post,
   Req,
   UploadedFile,
   UseGuards,
@@ -10,10 +11,11 @@ import {
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
-import { UpdateProfileDto } from './updateProfileDTO';
+import { UpdateProfileDto } from './DTO/updateProfileDTO';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { type UserDocument } from './schemas/user.schema';
+import { UpdateSettingsDto } from './DTO/updateSettingsDTO';
 
 @Controller('user')
 @ApiBearerAuth()
@@ -34,5 +36,14 @@ export class UsersController {
   ) {
     const userId = user.id;
     return this.usersService.updateWithFile(userId, dto, file);
+  }
+
+  @Patch('settings')
+  async updateSettings(
+    @GetUser() user: UserDocument,
+    @Body() dto: UpdateSettingsDto,
+  ) {
+    const userId = user.id;
+    return this.usersService.updateSettings(userId, dto);
   }
 }
