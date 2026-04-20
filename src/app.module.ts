@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { FieldsModule } from './fields/fields.module';
 import { FieldActivityModule } from './field-activity/field-activity.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { StatisticsModule } from './statistics/statistics.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     FieldActivityModule,
     AuthModule,
     CloudinaryModule,
+    StatisticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
