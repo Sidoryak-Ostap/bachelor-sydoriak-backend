@@ -30,6 +30,19 @@ export class User extends Document {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({
+    type: {
+      firstName: { type: String, default: '' },
+      lastName: { type: String, default: '' },
+      bio: { type: String, default: '' },
+      phoneNumber: { type: String, default: '' },
+      location: { type: String, default: '' },
+      avatarUrl: { type: String, default: null },
+    },
+    _id: false,
+  })
+  profile: Record<string, any>;
 }
 
 export type UserDocument = HydratedDocument<User>;
