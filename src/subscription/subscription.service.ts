@@ -1,10 +1,9 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Subscription } from './schemas/subscription.schema';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { PLAN_PRICES } from './constants';
 import axios from 'axios';
-import { log } from 'console';
 
 @Injectable()
 export class SubscriptionService {
@@ -15,7 +14,7 @@ export class SubscriptionService {
 
   async getSubscription(userId: string) {
     const subscription = await this.subscriptionModel.findOne({
-      userId: new Types.ObjectId(userId),
+      userId,
     });
 
     if (!subscription) {
@@ -35,6 +34,17 @@ export class SubscriptionService {
     if (!price) {
       throw new HttpException(
         'Некоректний тарифний план',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const existingSubscription = await this.subscriptionModel.findOne({
+      userId,
+    });
+
+    if (existingSubscription && existingSubscription.status === 'active') {
+      throw new HttpException(
+        'У вас вже є активна підписка. Будь ласка, скасуйте її перед створенням нової.',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -186,7 +196,7 @@ export class SubscriptionService {
           'Підписку успішно скасовано. Вона діятиме до кінця оплаченого періоду.',
         nextPaymentDate: subscription.nextPaymentDate,
       };
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.data?.errCode === 'INTERNAL_ERROR') {
         subscription.status = 'cancelled';
         await subscription.save();
