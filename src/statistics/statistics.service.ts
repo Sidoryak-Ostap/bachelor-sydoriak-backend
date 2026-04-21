@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Field, FieldDocument } from 'src/fields/schemas/field.schema';
+import { Field, FieldDocument } from '../fields/schemas/field.schema';
 
 @Injectable()
 export class StatisticsService {

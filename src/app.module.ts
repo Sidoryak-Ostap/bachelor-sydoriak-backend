@@ -10,6 +10,8 @@ import { FieldActivityModule } from './field-activity/field-activity.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { StatisticsModule } from './statistics/statistics.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { WeatherModule } from './weather/weather.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { SubscriptionModule } from './subscription/subscription.module';
     CloudinaryModule,
     StatisticsModule,
     SubscriptionModule,
+    WeatherModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

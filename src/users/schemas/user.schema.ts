@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, HydratedDocument } from 'mongoose';
+import mongoose, { Document, HydratedDocument } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
 @Schema({ timestamps: true })
@@ -66,7 +66,9 @@ export class User extends Document {
   };
 }
 
-export type UserDocument = HydratedDocument<User>;
+export type UserDocument = HydratedDocument<
+  User & { _id: mongoose.Types.ObjectId }
+>;
 export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.pre('save', async function (next) {
@@ -77,9 +79,9 @@ UserSchema.pre('save', async function (next) {
   next();
 });
 
-UserSchema.virtual('id').get(function () {
+UserSchema.virtual('id').get(function (this: UserDocument) {
   return this._id.toHexString();
-} as any);
+});
 
 UserSchema.set('toJSON', {
   virtuals: true,

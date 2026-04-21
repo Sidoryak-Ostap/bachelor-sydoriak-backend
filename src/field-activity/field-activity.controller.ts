@@ -10,9 +10,9 @@ import {
 import { FieldActivityService } from './field-activity.service';
 import { CreateFieldActivityDto } from './field-activity.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { GetUser } from 'src/auth/decorators/get-user.decorator';
-import { type UserDocument } from 'src/users/schemas/user.schema';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { type UserDocument } from '../users/schemas/user.schema';
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)

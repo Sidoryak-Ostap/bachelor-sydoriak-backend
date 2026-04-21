@@ -7,7 +7,7 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleAuthDto, LoginDto, SignUpDto, VerifyCodeDto } from './auth.dto';
-import { User, UserDocument } from 'src/users/schemas/user.schema';
+import { User, type UserDocument } from '../users/schemas/user.schema';
 import * as nodemailer from 'nodemailer';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
@@ -158,7 +158,7 @@ export class AuthService {
         ...tokens,
         user,
       };
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       throw new BadRequestException(err.message || 'Something went wrong');
     }

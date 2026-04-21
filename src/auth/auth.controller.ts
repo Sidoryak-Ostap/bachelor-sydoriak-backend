@@ -13,7 +13,7 @@ import { GoogleAuthDto, LoginDto, SignUpDto, VerifyCodeDto } from './auth.dto';
 import type { Response, Request } from 'express';
 import { GetUser } from './decorators/get-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { type UserDocument } from 'src/users/schemas/user.schema';
+import { type UserDocument } from '../users/schemas/user.schema';
 
 @Controller('auth')
 export class AuthController {

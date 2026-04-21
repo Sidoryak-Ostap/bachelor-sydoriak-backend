@@ -6,7 +6,7 @@ import {
   FieldActivity,
   FieldActivitySchema,
 } from './schemas/field-activity.schema';
-import { FieldsModule } from 'src/fields/fields.module';
+import { FieldsModule } from '../fields/fields.module';
 
 @Module({
   imports: [

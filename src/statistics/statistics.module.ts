@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { StatisticsController } from './statistics.controller';
 import { StatisticsService } from './statistics.service';
-import { FieldsModule } from 'src/fields/fields.module';
+import { FieldsModule } from '../fields/fields.module';
 
 @Module({
   controllers: [StatisticsController],

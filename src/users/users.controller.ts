@@ -9,11 +9,11 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './DTO/updateProfileDTO';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 import { type UserDocument } from './schemas/user.schema';
 import { UpdateSettingsDto } from './DTO/updateSettingsDTO';
 
