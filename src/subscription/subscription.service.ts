@@ -22,10 +22,16 @@ export class SubscriptionService {
         plan: 'starter',
         status: 'active',
         nextPaymentDate: null,
+        price: PLAN_PRICES.starter,
       };
     }
 
-    return subscription;
+    return {
+      plan: subscription.plan,
+      status: subscription.status,
+      nextPaymentDate: subscription.nextPaymentDate,
+      price: PLAN_PRICES[subscription.plan],
+    };
   }
 
   async createSubscriptionLink(userId: string, plan: 'basic' | 'pro') {
