@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose'; // Імпортуємо Schema як аліас
-import { FieldDocument, FieldSchema } from 'src/fields/schemas/field.schema';
+import { FieldDocument, FieldSchema } from '../../fields/schemas/field.schema';
 
 export type SubscriptionDocument = HydratedDocument<Subscription>;
 

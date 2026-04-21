@@ -6,7 +6,7 @@ import {
 } from './schemas/field-activity.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { Field, FieldDocument } from 'src/fields/schemas/field.schema';
+import { Field, FieldDocument } from '../fields/schemas/field.schema';
 
 @Injectable()
 export class FieldActivityService {
