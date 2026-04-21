@@ -172,7 +172,11 @@ export class SubscriptionService {
       userId,
     });
 
-    if (!subscription || !subscription.subscriptionId) {
+    if (
+      !subscription ||
+      !subscription.subscriptionId ||
+      subscription.status === 'cancelled'
+    ) {
       throw new HttpException(
         'Активної підписки не знайдено',
         HttpStatus.NOT_FOUND,
