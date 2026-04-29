@@ -10,7 +10,6 @@ import { Indices } from './schemas/indices.schema';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { sleep } from '@app/utils/sleep';
 import { CloudinaryService } from '@app/cloudinary/cloudinary.service';
-import { log } from 'console';
 
 @Injectable()
 export class SentinelService {
