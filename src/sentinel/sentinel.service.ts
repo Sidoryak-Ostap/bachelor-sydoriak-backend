@@ -435,4 +435,33 @@ export class SentinelService {
       }))
       .filter((d: any) => d.ndvi !== null);
   }
+
+  // API functions for controller
+
+  async getFieldIndices(fieldId: string, dateFrom?: string, dateTo?: string) {
+    const defaultDateTo = dateTo ? new Date(dateTo) : new Date();
+
+    const defaultDateFrom = dateFrom
+      ? new Date(dateFrom)
+      : new Date().setDate(defaultDateTo.getDate() - 30);
+
+    const query: any = { fieldId };
+
+    if (dateFrom && dateTo) {
+      query.date = {
+        $gte: new Date(dateFrom),
+        $lte: new Date(dateTo),
+      };
+    }
+
+    const indices = await this.indicesModel.find(query);
+
+    return indices;
+  }
+
+  async getFieldImages(fieldId: string) {
+    const maps = await this.fieldMapModel.find({ fieldId });
+
+    return maps;
+  }
 }
