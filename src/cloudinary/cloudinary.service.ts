@@ -29,4 +29,27 @@ export class CloudinaryService {
       toStream(file.buffer).pipe(upload);
     });
   }
+
+  async uploadBuffer(
+    buffer: Buffer,
+    folder: string,
+  ): Promise<UploadApiResponse | UploadApiErrorResponse> {
+    return new Promise((resolve, reject) => {
+      const upload = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'auto',
+          folder: folder,
+          format: 'png',
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          if (!result)
+            return reject(new Error('Cloudinary upload result is undefined'));
+          resolve(result);
+        },
+      );
+
+      toStream(buffer).pipe(upload);
+    });
+  }
 }

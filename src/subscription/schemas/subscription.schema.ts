@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose'; // Імпортуємо Schema як аліас
-import { FieldDocument, FieldSchema } from '../../fields/schemas/field.schema';
 
 export type SubscriptionDocument = HydratedDocument<Subscription>;
 
@@ -48,6 +47,6 @@ export class Subscription {
 
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);
 
-FieldSchema.virtual('id').get(function (this: FieldDocument) {
+SubscriptionSchema.virtual('id').get(function (this: SubscriptionDocument) {
   return this._id.toHexString();
 });
