@@ -13,6 +13,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
 import { WeatherModule } from './weather/weather.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SentinelModule } from './sentinel/sentinel.module';
+import { AiAnalysisReportModule } from './ai-analysis-report/ai-analysis-report.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SentinelModule } from './sentinel/sentinel.module';
     WeatherModule,
     ScheduleModule.forRoot(),
     SentinelModule,
+    AiAnalysisReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
