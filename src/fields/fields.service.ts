@@ -1,14 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Field, FieldDocument } from './schemas/field.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateFieldDto, UpdateFieldDto } from './field.dto';
-import { log } from 'console';
+import { SentinelService } from '@app/sentinel/sentinel.service';
 
 @Injectable()
 export class FieldsService {
   constructor(
     @InjectModel(Field.name) private fieldModel: Model<FieldDocument>,
+    @Inject(forwardRef(() => SentinelService))
+    private readonly sentinelService: SentinelService,
   ) {}
 
   async createField(dto: CreateFieldDto, userId: string): Promise<Field> {
@@ -19,7 +26,18 @@ export class FieldsService {
       previewUrl,
     });
 
-    return createdField.save();
+    const savedField = await createdField.save();
+
+    const dateFrom = new Date();
+    dateFrom.setDate(dateFrom.getDate() - 60);
+
+    this.sentinelService
+      .syncFieldIndices(savedField, savedField.id, dateFrom.toISOString())
+      .catch((err) => {
+        console.error('Background Sync Failed:', err);
+      });
+
+    return savedField;
   }
 
   async getFieldsByUser(userId: string): Promise<Field[]> {
