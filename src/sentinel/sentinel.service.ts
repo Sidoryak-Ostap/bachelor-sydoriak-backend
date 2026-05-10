@@ -183,8 +183,8 @@ export class SentinelService {
     }
   }
 
-  private async syncFieldIndices(field: Field, fieldId: string) {
-    const dateFrom = new Date();
+  async syncFieldIndices(field: Field, fieldId: string, dtFrom?: string) {
+    const dateFrom = dtFrom ? new Date(dtFrom) : new Date();
     dateFrom.setDate(dateFrom.getDate() - 7);
     const dateTo = new Date();
 

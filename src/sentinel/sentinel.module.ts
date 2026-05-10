@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { SentinelController } from './sentinel.controller';
 import { SentinelService } from './sentinel.service';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -10,15 +10,15 @@ import { CloudinaryModule } from '@app/cloudinary/cloudinary.module';
 
 @Module({
   controllers: [SentinelController],
+  exports: [SentinelService],
   providers: [SentinelService],
   imports: [
     MongooseModule.forFeature([
       { name: Indices.name, schema: IndicesSchema },
       { name: FieldMap.name, schema: FieldMapSchema },
     ]),
-    FieldsModule,
+    forwardRef(() => FieldsModule),
     CloudinaryModule,
-
     CacheModule.register({
       ttl: 3600,
       max: 10,
