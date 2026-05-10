@@ -243,10 +243,11 @@ export class SentinelService {
       date,
     );
 
-    const pngBuffer = await this.processTiffToHeatmap(tiffBuffer);
+    const { distribution, processedImage } =
+      await this.processTiffToHeatmap(tiffBuffer);
 
     const cloudinaryResult = await this.cloudinaryService.uploadBuffer(
-      pngBuffer,
+      processedImage,
       'agromap_maps',
     );
     const bbox = this.calculateFieldBounds(field.boundary.coordinates);
@@ -259,6 +260,7 @@ export class SentinelService {
         date,
         cloudinaryUrl: cloudinaryResult.secure_url,
         bbox,
+        distribution,
       },
       { upsert: true },
     );
@@ -345,7 +347,9 @@ export class SentinelService {
     }
   }
 
-  async processTiffToHeatmap(buffer: Buffer): Promise<Buffer> {
+  async processTiffToHeatmap(
+    buffer: Buffer,
+  ): Promise<{ distribution: any; processedImage: Buffer }> {
     const arrayBuffer = buffer.buffer.slice(
       buffer.byteOffset,
       buffer.byteOffset + buffer.byteLength,
@@ -359,6 +363,8 @@ export class SentinelService {
 
     const rasters = await image.readRasters();
     const values = rasters[0] as Float32Array;
+
+    const distribution = await this.calculateAreaDistribution(values);
 
     const rgba = Buffer.alloc(width * height * 4);
 
@@ -395,23 +401,23 @@ export class SentinelService {
       }
     }
 
-    return await sharp(rgba, { raw: { width, height, channels: 4 } })
+    const processedImage = await sharp(rgba, {
+      raw: { width, height, channels: 4 },
+    })
       .png() // Convert to PNG first to handle transparency correctly
       .toBuffer()
       .then((data) =>
         sharp(data)
-          // 1. Resize using a smoother kernel
           .resize(width * 10, height * 10, {
             kernel: sharp.kernel.cubic,
           })
-          // 2. Apply a much stronger Gaussian blur
-          // A sigma of 2-5 will actually blend the pixel boundaries
           .blur(5)
-          // 3. Optional: Add a slight median filter to remove "salt and pepper" noise
           .median(3)
           .png()
           .toBuffer(),
       );
+
+    return { distribution, processedImage };
   }
 
   private calculateFieldBounds(coordinates: number[][][]) {
@@ -478,5 +484,33 @@ export class SentinelService {
     const maps = await this.fieldMapModel.find({ fieldId });
 
     return maps.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
+
+  private async calculateAreaDistribution(values: Float32Array) {
+    const validValues = values.filter((v) => !isNaN(v) && v > 0);
+
+    const totalPixels = validValues.length;
+    if (totalPixels === 0) return null;
+
+    const distribution = {
+      excellent: 0, // 0.7 - 1.0
+      good: 0, // 0.5 - 0.7
+      moderate: 0, // 0.3 - 0.5
+      poor: 0, // < 0.3
+    };
+
+    validValues.forEach((val) => {
+      if (val >= 0.7) distribution.excellent++;
+      else if (val >= 0.5) distribution.good++;
+      else if (val >= 0.3) distribution.moderate++;
+      else distribution.poor++;
+    });
+
+    return {
+      excellent: Math.round((distribution.excellent / totalPixels) * 100),
+      good: Math.round((distribution.good / totalPixels) * 100),
+      moderate: Math.round((distribution.moderate / totalPixels) * 100),
+      poor: Math.round((distribution.poor / totalPixels) * 100),
+    };
   }
 }
