@@ -372,16 +372,19 @@ export class SentinelService {
         rgba[pos + 2] = 0;
         rgba[pos + 3] = 0;
       } else {
-        let r, g, b;
+        const t = Math.max(0, Math.min(1, val));
+        let r = 0,
+          g = 0,
+          b = 0;
 
-        if (val < 0.5) {
+        if (t < 0.5) {
           r = 255;
-          g = Math.floor(255 * (val / 0.5));
+          g = Math.floor(255 * (t * 2));
           b = 0;
         } else {
           // Від Жовтого (0.5) до Зеленого (1.0)
-          r = Math.floor(255 * (1 - (val - 0.5) / 0.5));
-          g = 255;
+          r = Math.floor(255 * (1 - (t - 0.5) * 2));
+          g = Math.floor(255 * (0.5 + (t - 0.5)));
           b = 0;
         }
 
@@ -393,17 +396,22 @@ export class SentinelService {
     }
 
     return await sharp(rgba, { raw: { width, height, channels: 4 } })
-      .resize(width * 10, height * 10, {
-        kernel: sharp.kernel.lanczos3,
-      })
-      .convolve({
-        width: 3,
-        height: 3,
-        kernel: [1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9],
-      })
-      .blur(3)
-      .png()
-      .toBuffer();
+      .png() // Convert to PNG first to handle transparency correctly
+      .toBuffer()
+      .then((data) =>
+        sharp(data)
+          // 1. Resize using a smoother kernel
+          .resize(width * 10, height * 10, {
+            kernel: sharp.kernel.cubic,
+          })
+          // 2. Apply a much stronger Gaussian blur
+          // A sigma of 2-5 will actually blend the pixel boundaries
+          .blur(5)
+          // 3. Optional: Add a slight median filter to remove "salt and pepper" noise
+          .median(3)
+          .png()
+          .toBuffer(),
+      );
   }
 
   private calculateFieldBounds(coordinates: number[][][]) {
