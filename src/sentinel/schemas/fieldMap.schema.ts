@@ -39,6 +39,23 @@ export class FieldMap extends Document {
     sentinelBbox: number[];
     mapboxCoords: number[][];
   };
+
+  @Prop({
+    required: true,
+    _id: false,
+    type: {
+      excellent: { type: Number, required: true },
+      good: { type: Number, required: true },
+      moderate: { type: Number, required: true },
+      poor: { type: Number, required: true },
+    },
+  })
+  distribution: {
+    excellent: number;
+    good: number;
+    moderate: number;
+    poor: number;
+  };
 }
 
 export const FieldMapSchema = SchemaFactory.createForClass(FieldMap);
