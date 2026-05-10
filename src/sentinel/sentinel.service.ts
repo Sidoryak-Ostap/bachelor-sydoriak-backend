@@ -184,7 +184,6 @@ export class SentinelService {
   }
 
   private async syncFieldIndices(field: Field, fieldId: string) {
-    // Формування дат для запиту до Sentinel API (останній тиждень)
     const dateFrom = new Date();
     dateFrom.setDate(dateFrom.getDate() - 7);
     const dateTo = new Date();
@@ -271,9 +270,12 @@ export class SentinelService {
     const targetDate = new Date(date);
 
     const from = new Date(targetDate);
+    from.setDate(from.getDate() - 2);
     from.setUTCHours(0, 0, 0, 0);
 
+    // Розширюємо діапазон: +2 дні від цільової дати
     const to = new Date(targetDate);
+    to.setDate(to.getDate() + 2);
     to.setUTCHours(23, 59, 59, 999);
 
     const evalscript = `
@@ -392,9 +394,14 @@ export class SentinelService {
 
     return await sharp(rgba, { raw: { width, height, channels: 4 } })
       .resize(width * 10, height * 10, {
-        kernel: sharp.kernel.cubic,
+        kernel: sharp.kernel.lanczos3,
       })
-      .blur(0.8)
+      .convolve({
+        width: 3,
+        height: 3,
+        kernel: [1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9],
+      })
+      .blur(3)
       .png()
       .toBuffer();
   }
@@ -456,12 +463,12 @@ export class SentinelService {
 
     const indices = await this.indicesModel.find(query);
 
-    return indices;
+    return indices.sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
   async getFieldImages(fieldId: string) {
     const maps = await this.fieldMapModel.find({ fieldId });
 
-    return maps;
+    return maps.sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 }
