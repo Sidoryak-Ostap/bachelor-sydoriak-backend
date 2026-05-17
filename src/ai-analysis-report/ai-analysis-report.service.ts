@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
 import { SentinelService } from '@app/sentinel/sentinel.service';
 import { FieldsService } from '@app/fields/fields.service';
 
 @Injectable()
 export class AiAnalysisReportService {
+  private CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   private genAI: GoogleGenAI;
   private model: any;
   constructor(
@@ -22,6 +23,17 @@ export class AiAnalysisReportService {
     language?: 'English' | 'Ukrainian',
   ) {
     const field = await this.fieldsService.getFieldById(fieldId, userId);
+
+    const interpretation = field?.interpretation;
+
+    if (
+      interpretation &&
+      new Date().getTime() - new Date(interpretation.generatedAt).getTime() <
+        this.CACHE_TTL_MS
+    ) {
+      return interpretation;
+    }
+
     const stats = await this.sentinelService.getFieldIndices(fieldId);
     const distribution = await this.sentinelService.getFieldImages(fieldId);
 
@@ -72,59 +84,74 @@ export class AiAnalysisReportService {
                 }
     `;
 
-    const englishPrompt = `
-  You are an expert agronomic analyst for the AgroMap system. 
-  Your task is to analyze the dynamics of satellite indices and provide a professional conclusion.
-  
-  IMPORTANT: PROVIDE THE RESPONSE STRICTLY IN THIS LANGUAGE: ${language || 'English'}.
+    //     const englishPrompt = `
+    //   You are an expert agronomic analyst for the AgroMap system.
+    //   Your task is to analyze the dynamics of satellite indices and provide a professional conclusion.
 
-  INPUT DATA:
-  1. Crop Type: ${cropType || 'Not specified'}
-  2. Analysis Date: ${new Date().toLocaleDateString()}
-  3. Latest Area Distribution: Excellent:${latestDistribution.excellent}%, Good:${latestDistribution.good}%, Moderate:${latestDistribution.moderate}%, Poor:${latestDistribution.poor}%
-  4. Historical Data (last 3 records): ${JSON.stringify(historicalData)}
+    //   IMPORTANT: PROVIDE THE RESPONSE STRICTLY IN THIS LANGUAGE: ${language || 'English'}.
 
-  INSTRUCTIONS:
-  - Compare current index values with previous ones (trends).
-  - Evaluate vegetation status (NDVI, EVI) and moisture levels (NDMI).
-  - Use SAVI to adjust for soil influence if vegetation is low.
-  - Consider the current month (${new Date().toLocaleString('default', { month: 'long' })}).
-  - Provide recommendations and risks ONLY if they are justified by the data; do not hallucinate them.
+    //   INPUT DATA:
+    //   1. Crop Type: ${cropType || 'Not specified'}
+    //   2. Analysis Date: ${new Date().toLocaleDateString()}
+    //   3. Latest Area Distribution: Excellent:${latestDistribution.excellent}%, Good:${latestDistribution.good}%, Moderate:${latestDistribution.moderate}%, Poor:${latestDistribution.poor}%
+    //   4. Historical Data (last 3 records): ${JSON.stringify(historicalData)}
 
-  IMPORTANT: PROVIDE THE RESPONSE STRICTLY IN THIS LANGUAGE: ${language || 'English'}.
+    //   INSTRUCTIONS:
+    //   - Compare current index values with previous ones (trends).
+    //   - Evaluate vegetation status (NDVI, EVI) and moisture levels (NDMI).
+    //   - Use SAVI to adjust for soil influence if vegetation is low.
+    //   - Consider the current month (${new Date().toLocaleString('default', { month: 'long' })}).
+    //   - Provide recommendations and risks ONLY if they are justified by the data; do not hallucinate them.
 
+    //   IMPORTANT: PROVIDE THE RESPONSE STRICTLY IN THIS LANGUAGE: ${language || 'English'}.
 
-  FORMAT REQUIREMENT:
-  Return the response STRICTLY as a JSON object. No preamble or post-text.
-  JSON Structure:
-  {
-    "status": "Short description of general condition (1 sentence)",
-    "stressLevel": "Low/Medium/High",
-    "analysis": "Brief analysis of index dynamics (why they are rising or falling)",
-    "risks": ["risk 1", "risk 2"],
-    "recommendations": ["advice 1", "advice 2"]
-  }
-`;
+    //   FORMAT REQUIREMENT:
+    //   Return the response STRICTLY as a JSON object. No preamble or post-text.
+    //   JSON Structure:
+    //   {
+    //     "status": "Short description of general condition (1 sentence)",
+    //     "stressLevel": "Low/Medium/High",
+    //     "analysis": "Brief analysis of index dynamics (why they are rising or falling)",
+    //     "risks": ["risk 1", "risk 2"],
+    //     "recommendations": ["advice 1", "advice 2"]
+    //   }
+    // `;
 
-    const response = await this.genAI.models.generateContent({
-      model: 'gemini-2.5-flash',
-      //   contents: language === 'Ukrainian' ? ukrainianPrompt : englishPrompt,
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: `IMPORTANT: You must output the JSON only in ${language}. No other language is allowed.\n\n${language === 'Ukrainian' ? ukrainianPrompt : englishPrompt}`,
-            },
-          ],
+    try {
+      const response = await this.genAI.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `${ukrainianPrompt} \n\n Важливо: Ти повинен надати відповідь в JSON форматі ${language} мовою. Жодна інша мова не допускається.`,
+              },
+            ],
+          },
+        ],
+
+        config: {
+          responseMimeType: 'application/json',
         },
-      ],
+      });
 
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
+      const jsonText = response.text;
+      const parsedData = JSON.parse(jsonText || '');
 
-    return response.text;
+      await this.fieldsService.updateFieldInterpretation(
+        fieldId,
+        userId,
+        parsedData,
+      );
+
+      return parsedData;
+    } catch (error) {
+      console.error('Помилка генерації або парсингу тексту з Gemini:', error);
+
+      throw new InternalServerErrorException(
+        'Не вдалося отримати коректний аналіз поля.',
+      );
+    }
   }
 }

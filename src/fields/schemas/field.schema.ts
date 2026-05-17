@@ -40,8 +40,28 @@ export class Field {
   @Prop({ required: false })
   soilType: string;
 
-  @Prop({ requred: false })
+  @Prop({ required: false })
   previewUrl: string;
+
+  @Prop({
+    required: false,
+    type: {
+      status: { type: String },
+      stressLevel: { type: String },
+      analysis: { type: String },
+      risks: [{ type: String }],
+      recommendations: [{ type: String }],
+      generatedAt: { type: Date, default: Date.now },
+    },
+  })
+  interpretation?: {
+    status: string;
+    stressLevel: string;
+    analysis: string;
+    risks: string[];
+    recommendations: string[];
+    generatedAt: Date;
+  };
 
   @Prop({
     type: {

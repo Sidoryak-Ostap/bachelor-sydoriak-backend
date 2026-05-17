@@ -16,8 +16,8 @@ export class AiAnalysisReportController {
   @Post('/:fieldId')
   async getFieldAnalysis(
     @Param('fieldId') fieldId: string,
-    @Body() language: 'English' | 'Ukrainian',
     @GetUser() user: UserDocument,
+    @Body('language') language: 'English' | 'Ukrainian',
   ) {
     return this.aiAnalysisReportService.generateReport(
       fieldId,
