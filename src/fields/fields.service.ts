@@ -78,6 +78,24 @@ export class FieldsService {
     return updatedField;
   }
 
+  async updateFieldInterpretation(
+    fieldId: string,
+    userId: string,
+    interpretation: Field['interpretation'],
+  ): Promise<Field> {
+    const updatedField = await this.fieldModel.findOneAndUpdate(
+      { _id: fieldId, userId },
+      { interpretation },
+      { new: true },
+    );
+
+    if (!updatedField) {
+      throw new NotFoundException(`Field with ID ${fieldId} not found`);
+    }
+
+    return updatedField;
+  }
+
   async deleteFieldById(fieldId: string, userId: string): Promise<void> {
     const result = await this.fieldModel
       .findOneAndDelete({ _id: fieldId, userId })
