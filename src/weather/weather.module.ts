@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { WeatherController } from './weather.controller';
 import { WeatherService } from './weather.service';
 import { FieldsModule } from '@app/fields/fields.module';
@@ -7,12 +7,13 @@ import { WeatherHistory, WeatherHistorySchema } from './schemas/weather.schema';
 
 @Module({
   controllers: [WeatherController],
+  exports: [WeatherService],
   providers: [WeatherService],
   imports: [
     MongooseModule.forFeature([
       { name: WeatherHistory.name, schema: WeatherHistorySchema },
     ]),
-    FieldsModule,
+    forwardRef(() => FieldsModule),
   ],
 })
 export class WeatherModule {}

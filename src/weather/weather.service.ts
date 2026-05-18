@@ -1,6 +1,7 @@
 import { Field, FieldDocument } from '@app/fields/schemas/field.schema';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -19,6 +20,8 @@ import promiseRetry from 'promise-retry';
 export class WeatherService {
   private readonly apiKey = process.env.OPENWEATHERMAP_API_KEY || '';
   private readonly baseUrl = process.env.OPENWEATHER_API_URL || '';
+  private readonly daySummaryApiUrl =
+    process.env.OPENWEATHER_DAY_SUMMARY_API_URL || '';
 
   constructor(
     @InjectModel(Field.name) private readonly fieldModel: Model<FieldDocument>,
@@ -151,5 +154,134 @@ export class WeatherService {
     const centerLon = totalLon / coords.length;
 
     return { lat: centerLat, lon: centerLon };
+  }
+
+  //
+
+  async syncHistoricalWeather(fieldId: string, startDate: Date) {
+    const field = await this.fieldModel.findById(fieldId).exec();
+    if (!field) throw new NotFoundException('Поле не знайдено');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (startDate >= today) {
+      throw new BadRequestException('Початкова дата повинна бути в минулому');
+    }
+
+    const datesToSync: Date[] = [];
+    const currentDatePointer = new Date(startDate);
+    currentDatePointer.setHours(14, 20, 0, 0);
+
+    while (currentDatePointer < today) {
+      datesToSync.push(new Date(currentDatePointer.getTime()));
+
+      currentDatePointer.setDate(currentDatePointer.getDate() + 1);
+    }
+
+    console.log(
+      `Початок синхронізації історії для поля ${fieldId}. Всього днів: ${datesToSync.length}`,
+    );
+
+    const batchSize = 5;
+    const { lat, lon } = this.getFieldCoords(field);
+
+    // 2. ОБРОБКА ПАЧКАМИ
+    for (let i = 0; i < datesToSync.length; i += batchSize) {
+      const batch = datesToSync.slice(i, i + batchSize);
+
+      await Promise.all(
+        batch.map(async (uniqueDate) => {
+          try {
+            await this.fetchAndSaveHistoricalDay(
+              field.id,
+              lat,
+              lon,
+              uniqueDate,
+            );
+          } catch (error: any) {
+            console.error(
+              `Не вдалося завантажити історію за ${uniqueDate.toISOString().split('T')[0]} для поля ${fieldId}:`,
+              error.message,
+            );
+          }
+        }),
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    console.log(`Історичну синхронізацію для поля ${fieldId} завершено.`);
+  }
+
+  private async fetchAndSaveHistoricalDay(
+    fieldId: string,
+    lat: number,
+    lon: number,
+    date: Date,
+  ) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+
+    const response = await axios.get(this.daySummaryApiUrl, {
+      params: {
+        lat,
+        lon,
+        date: dateString,
+        appid: this.apiKey,
+        units: 'metric',
+        lang: 'eng',
+      },
+    });
+
+    const summaryData = response.data;
+
+    if (!summaryData) {
+      throw new Error(
+        `Відсутні дані у відповіді Day Summary API за дату ${dateString}`,
+      );
+    }
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    await this.weatherHistoryModel.findOneAndUpdate(
+      {
+        fieldId: fieldId,
+        date: { $gte: startOfDay, $lte: endOfDay },
+      },
+      {
+        fieldId: fieldId,
+        date: startOfDay,
+
+        temp: {
+          day:
+            summaryData.temperature?.afternoon ||
+            summaryData.temperature?.morning,
+          min: summaryData.temperature?.min,
+          max: summaryData.temperature?.max,
+        },
+
+        pressure:
+          summaryData.pressure?.afternoon || summaryData.pressure?.morning,
+        humidity: summaryData.humidity?.afternoon,
+        dew_point: summaryData.dew_point || 0,
+        wind_speed: summaryData.wind?.max?.speed || 0,
+        wind_deg: summaryData.wind?.max?.direction || 0,
+        wind_gust: 0,
+        clouds: summaryData.cloud_cover?.afternoon || 0,
+        rain: summaryData.precipitation?.total || 0,
+        pop: 0,
+      },
+      {
+        upsert: true,
+        new: true,
+      },
+    );
   }
 }

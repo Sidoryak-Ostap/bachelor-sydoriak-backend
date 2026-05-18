@@ -9,6 +9,7 @@ import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateFieldDto, UpdateFieldDto } from './field.dto';
 import { SentinelService } from '@app/sentinel/sentinel.service';
+import { WeatherService } from '@app/weather/weather.service';
 
 @Injectable()
 export class FieldsService {
@@ -16,6 +17,8 @@ export class FieldsService {
     @InjectModel(Field.name) private fieldModel: Model<FieldDocument>,
     @Inject(forwardRef(() => SentinelService))
     private readonly sentinelService: SentinelService,
+    @Inject(forwardRef(() => WeatherService))
+    private readonly weatherService: WeatherService,
   ) {}
 
   async createField(dto: CreateFieldDto, userId: string): Promise<Field> {
@@ -37,6 +40,12 @@ export class FieldsService {
       .syncFieldIndices(savedField, savedField.id, dateFrom.toISOString())
       .catch((err) => {
         console.error('Background Sync Failed:', err);
+      });
+
+    this.weatherService
+      .syncHistoricalWeather(savedField.id, dateFrom)
+      .catch((err) => {
+        console.error('Historical Weather Sync Failed:', err);
       });
 
     return savedField;
