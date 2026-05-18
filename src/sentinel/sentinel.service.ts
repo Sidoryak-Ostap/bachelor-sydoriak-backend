@@ -92,6 +92,7 @@ export class SentinelService {
   ) {
     const maxRetries = 5;
 
+    console.log('Getting indices with coordinates:', coordinates);
     const token = await this.getAccessToken();
 
     const evalscript = `
@@ -184,15 +185,21 @@ export class SentinelService {
   }
 
   async syncFieldIndices(field: Field, fieldId: string, dtFrom?: string) {
-    const dateFrom = dtFrom ? new Date(dtFrom) : new Date();
-    dateFrom.setDate(dateFrom.getDate() - 7);
-    const dateTo = new Date();
+    const dateFromObj = dtFrom ? new Date(dtFrom) : new Date();
+
+    if (!dtFrom) {
+      dateFromObj.setDate(dateFromObj.getDate() - 7);
+    }
+    const dateFromStr = `${dateFromObj.toISOString().split('T')[0]}T00:00:00Z`;
+
+    const dateToObj = new Date();
+    const dateToStr = `${dateToObj.toISOString().split('T')[0]}T23:59:59Z`;
 
     // Отримання індексів вегетації для поля
     const stats = await this.getIndices(
       field.boundary.coordinates,
-      dateFrom.toISOString(),
-      dateTo.toISOString(),
+      dateFromStr,
+      dateToStr,
     );
 
     const savePromises = stats.map(async (dayStat) => {
@@ -217,7 +224,9 @@ export class SentinelService {
           },
         );
 
-        await this.generateAndUploadMap(field, dayStat.date, fieldId);
+        if (dayStat.ndvi && !isNaN(dayStat.ndvi.mean)) {
+          await this.generateAndUploadMap(field, dayStat.date, fieldId);
+        }
 
         return record;
       } catch (error) {
