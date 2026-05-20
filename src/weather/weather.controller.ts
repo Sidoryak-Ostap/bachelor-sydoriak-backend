@@ -1,4 +1,10 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { WeatherService } from './weather.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Field, FieldDocument } from '@app/fields/schemas/field.schema';
@@ -12,13 +18,16 @@ export class WeatherController {
   ) {}
 
   @Get('field/:id')
-  async getWeatherForField(@Param('id') fieldId: string) {
+  async getWeatherForField(
+    @Param('id') fieldId: string,
+    @Query('lang') lang: 'en' | 'uk' = 'uk',
+  ) {
     const field = await this.fieldModel.findById(fieldId);
 
     if (!field) {
       throw new NotFoundException('Поле не знайдено');
     }
 
-    return this.weatherService.getWeatherData(field);
+    return this.weatherService.getWeatherData(field, lang);
   }
 }

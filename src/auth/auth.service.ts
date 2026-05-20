@@ -237,14 +237,13 @@ export class AuthService {
       throw new BadRequestException('Reset code has expired');
     }
 
-    // const salt = await bcrypt.genSalt(
-    //   parseInt(process.env.SALT_ROUNDS || '10'),
-    // );
-
-    // const hashed = await bcrypt.hash(newPassword, salt);
+    const hashed = await bcrypt.hash(
+      newPassword,
+      parseInt(process.env.SALT_ROUNDS || '10'),
+    );
 
     await this.usersService.update(user.id, {
-      password: newPassword,
+      password: hashed,
       resetCode: '',
       resetCodeExpires: null,
       isResetCodeVerified: false,

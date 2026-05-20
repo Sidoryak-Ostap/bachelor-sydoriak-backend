@@ -73,7 +73,7 @@ export class WeatherService {
     );
   }
 
-  async getWeatherData(field: FieldDocument) {
+  async getWeatherData(field: FieldDocument, lang: 'en' | 'uk' = 'uk') {
     if (!field) throw new NotFoundException('Поле не знайдено');
 
     const { lat, lon } = this.getFieldCoords(field);
@@ -85,12 +85,13 @@ export class WeatherService {
           lon,
           appid: this.apiKey,
           units: 'metric',
-          lang: 'eng',
-          exclude: 'minutely,alerts',
+          lang,
+          exclude: 'minutely,hourly,alerts',
         },
       });
 
       const data = response.data;
+
       const todayData = data.daily[0];
 
       const startOfDay = new Date();
@@ -128,9 +129,12 @@ export class WeatherService {
         current: {
           temp: data.current.temp,
           pressure: data.current.pressure,
+          clouds: data?.current?.clouds || 0,
+
           humidity: data.current.humidity,
           wind_speed: data.current.wind_speed,
           description: data.current.weather[0].description,
+          icon: data.current.weather[0].icon,
         },
         daily: data.daily.slice(0, 7),
       };
