@@ -24,7 +24,6 @@ export class FieldsService {
   async createField(dto: CreateFieldDto, userId: string): Promise<Field> {
     const previewUrl = this.generatePreviewUrl(dto.boundary);
 
-    console.log('Creating dto:', dto);
     const createdField = new this.fieldModel({
       ...dto,
       userId,
