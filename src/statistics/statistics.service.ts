@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Field, FieldDocument } from '../fields/schemas/field.schema';
+import { Indices, IndicesDocument } from '@app/sentinel/schemas/indices.schema';
 
 @Injectable()
 export class StatisticsService {
   constructor(
     @InjectModel(Field.name) private fieldModel: Model<FieldDocument>,
+    @InjectModel(Indices.name) private indicesModel: Model<IndicesDocument>,
   ) {}
 
   async getFieldStatistics(userId: string) {
@@ -23,6 +25,7 @@ export class StatisticsService {
     }, {});
 
     const cropAreaDistribution = this.calculateCropAreaDistribution(allFields);
+    const { meanNDVI, lastIndices } = await this.getMeanNDVI(allFields);
 
     return {
       totalFields,
@@ -30,6 +33,8 @@ export class StatisticsService {
       averageArea,
       cropTypeDistribution,
       cropAreaDistribution,
+      meanNDVI,
+      lastIndices,
     };
   }
 
@@ -54,5 +59,30 @@ export class StatisticsService {
       name,
       value: Number(((area / totalArea) * 100).toFixed(1)),
     }));
+  };
+
+  private getMeanNDVI = async (allFields: FieldDocument[]) => {
+    const fieldIds = allFields.map((field) => field.id);
+
+    const lastIndices = await this.indicesModel.aggregate([
+      { $match: { fieldId: { $in: fieldIds } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: '$fieldId',
+          ndvi: { $first: '$ndvi' },
+          date: { $first: '$date' },
+        },
+      },
+    ]);
+
+    const totalNDVI = lastIndices.reduce(
+      (sum, item) => sum + item.ndvi.mean,
+      0,
+    );
+    const meanNDVI =
+      lastIndices.length > 0 ? totalNDVI / lastIndices.length : 0;
+
+    return { meanNDVI, lastIndices };
   };
 }
