@@ -7,6 +7,8 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use(cookieParser());
+
   app.enableCors({
     origin: ['http://localhost:5173'],
     credentials: true,
@@ -16,9 +18,9 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // removes extra properties
-      forbidNonWhitelisted: true, // throws error for unknown properties
-      transform: true, // converts payload to DTO instance
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
@@ -26,15 +28,16 @@ async function bootstrap() {
     .setTitle('Agromap API')
     .setDescription('API documentation for my Agromap project')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  app.use(cookieParser());
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log(`🚀 Server running on http://localhost:3000`);
-  console.log(`📘 Swagger docs available at http://localhost:3000/api`);
+  console.log(`🚀 Server running on http://localhost:${port}`);
+  console.log(`📘 Swagger docs available at http://localhost:${port}/api`);
 }
 bootstrap();
