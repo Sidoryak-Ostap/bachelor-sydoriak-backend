@@ -1,98 +1,102 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Agromap
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Веб-сервіс для управління земельними ділянками фермерського господарства з використанням інтерактивної карти та аналізу даних на основі штучного інтелекту.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+**Виконав:** Сидоряк Остап Васильович  
+**Науковий керівник:** Колдовський В'ячеслав Васильович, к.е.н.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Опис проєкту
 
-## Project setup
+Agromap — це система, створена для малих та середніх фермерів і агрономів, які прагнуть ефективно керувати своїми полями, аналізувати стан культур і прогнозувати врожайність за допомогою технологій штучного інтелекту.
+
+Система побудована на основі клієнт-серверної архітектури:
+
+- **Frontend** — React, TypeScript, Redux Toolkit
+- **Backend** — NestJS, TypeScript, MongoDB
+- **ML** — FastAPI, scikit-learn
+- **Сторонні сервіси** — Sentinel Hub, OpenWeatherMap, Gemini API, Cloudinary, MonoPay API
+
+---
+
+## Основні модулі
+
+### Модуль користувача
+
+- Реєстрація та авторизація (email/password та Google OAuth).
+- Механізм Refresh Token Rotation для безпечного управління сесіями.
+- Збереження персональних налаштувань (мова, часовий пояс тощо).
+
+### Модуль карти
+
+- Відображення інтерактивної карти на основі Mapbox.
+- Малювання полігонів, що позначають межі полів.
+- Автоматичний розрахунок площі (м², га).
+- Введення даних про поле: назва, культура, тип ґрунту.
+- Редагування та видалення полів.
+
+### Модуль автоматичного оновлення даних
+
+- Автоматичне отримання вегетаційних індексів (NDVI, EVI, NDMI, SAVI) через Sentinel Hub API за розкладом.
+- Автоматичне отримання погодних даних (температура, опади, вологість тощо) через OpenWeatherMap API за розкладом.
+- Організація фонової обробки через асинхронну чергу (In-Memory Queue).
+- Розбиття полів на пакети відповідно до rate-лімітів сторонніх сервісів.
+- Механізм повторних спроб (retry) у разі збою під час отримання даних.
+- Потокове зчитування полів з бази даних через Mongoose cursor.
+
+### Модуль аналітики
+
+- Підрахунок загальної площі полів.
+- Відображення динаміки площ за культурами.
+- Побудова графіків розподілу культур.
+- Графіки динаміки вегетаційних індексів.
+
+### Модуль прогнозування врожайності
+
+- Прогноз очікуваної врожайності (т/га) на основі NDVI та погодних даних.
+- Формування набору ознак (NDVI, погода, культура, тип ґрунту) для моделі машинного навчання.
+- Підтримка часткових даних — модель підставляє історичні середні для відсутніх значень.
+- Відображення рівня достовірності прогнозу (низький, середній, високий).
+
+---
+
+## Структура репозиторіїв
+
+Проєкт складається з трьох окремих репозиторіїв:
+
+| Частина  | Посилання                                                    |
+| -------- | ------------------------------------------------------------ |
+| Frontend | https://github.com/Sidoryak-Ostap/bachelor-sydoriak-frontend |
+| Backend  | поточний репозиторій                                         |
+| ML       | _(додати посилання)_                                         |
+
+---
+
+## Інструкція зі встановлення та запуску
+
+### Frontend
+
+1. Клонувати репозиторій за допомогою наступної команди:
 
 ```bash
-$ npm install
+git clone <посилання на даний репозиторій>
 ```
 
-## Compile and run the project
+2. Створити файл `.env` в корені даного репозиторії на основі `.env.example` та заповнити необхідні значення/ключі токени:
+
+3. Встановити всі бібліотеки та залежності:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+4. Запустити проєкт виконуючи команду:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
 
-## Deployment
+5. В терміналі зв'явиться повідомлення, порт на якому працює сервер (3000), та готовність SMTP сервера до надсилання email.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+---
