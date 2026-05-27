@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Subscription } from './schemas/subscription.schema';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { PLAN_PRICES } from './constants';
 import axios from 'axios';
@@ -22,7 +22,7 @@ export class SubscriptionService {
         plan: 'starter',
         status: 'active',
         nextPaymentDate: null,
-        price: PLAN_PRICES.starter,
+        price: PLAN_PRICES.monthly.starter,
       };
     }
 
@@ -30,12 +30,16 @@ export class SubscriptionService {
       plan: subscription.plan ?? 'starter',
       status: subscription.status,
       nextPaymentDate: subscription.nextPaymentDate,
-      price: PLAN_PRICES[subscription.plan ?? 'starter'],
+      price: PLAN_PRICES.monthly[subscription.plan ?? 'starter'],
     };
   }
 
-  async createSubscriptionLink(userId: string, plan: 'basic' | 'pro') {
-    const price = PLAN_PRICES[plan];
+  async createSubscriptionLink(
+    userId: string,
+    plan: 'basic' | 'pro',
+    interval: 'monthly' | 'yearly' = 'monthly',
+  ) {
+    const price = PLAN_PRICES[interval][plan];
 
     if (!price) {
       throw new HttpException(

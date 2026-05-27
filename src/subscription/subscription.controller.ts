@@ -42,8 +42,13 @@ export class SubscriptionController {
   async createSubscription(
     @GetUser() user: UserDocument,
     @Body('plan') plan: 'basic' | 'pro',
+    @Body('interval') interval: 'monthly' | 'yearly' = 'monthly',
   ) {
-    return this.subscriptionService.createSubscriptionLink(user.id, plan);
+    return this.subscriptionService.createSubscriptionLink(
+      user.id,
+      plan,
+      interval,
+    );
   }
 
   @ApiBearerAuth()

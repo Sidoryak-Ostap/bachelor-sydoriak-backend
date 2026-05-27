@@ -2,10 +2,12 @@ import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsObject,
+  IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
@@ -39,6 +41,13 @@ export class CreateFieldDto {
   @IsNotEmpty()
   @IsString()
   soilType: string;
+
+  @IsOptional()
+  @IsString()
+  previewUrl: string;
+
+  @IsOptional()
+  seedingDate: Date | null;
 
   @IsObject()
   @ValidateNested()

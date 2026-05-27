@@ -43,6 +43,9 @@ export class Field {
   @Prop({ required: false })
   previewUrl: string;
 
+  @Prop({ required: false, type: Date || null })
+  seedingDate: Date | null;
+
   @Prop({
     required: false,
     type: {

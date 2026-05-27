@@ -28,6 +28,7 @@ export class FieldsService {
       ...dto,
       userId,
       previewUrl,
+      seedingDate: dto.seedingDate || null,
     });
 
     const savedField = await createdField.save();
