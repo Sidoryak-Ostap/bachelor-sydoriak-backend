@@ -81,6 +81,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log('Received refresh token request with cookies:', req.cookies);
     const refreshToken = req.cookies?.['refreshToken'];
 
     if (!refreshToken)
