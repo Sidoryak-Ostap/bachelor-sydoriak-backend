@@ -48,9 +48,7 @@ export class WeatherService {
       console.error('Помилка у фоновому процесі синхронізації:', err),
     );
 
-    console.log(
-      `--- Планувальник звільнив потік. ${allFieldIds.length} полів обробляються асинхронно у фоні ---`,
-    );
+    console.log('--- Фонова синхронізація погоди завершена ---');
   }
 
   private async processFieldsQueueInMemory(fieldIds: string[]) {
@@ -58,16 +56,12 @@ export class WeatherService {
 
     for (let i = 0; i < fieldIds.length; i += chunkSize) {
       const chunk = fieldIds.slice(i, i + chunkSize);
-      console.log(
-        `[Фонова Черга] Обробка пачки полів: ${i + 1} - ${Math.min(i + chunkSize, fieldIds.length)}`,
-      );
 
       await Promise.all(
         chunk.map((id) => this.syncSingleFieldWithRetry(id, 3)),
       );
 
       if (i + chunkSize < fieldIds.length) {
-        console.log('[Фонова Черга] Очікування 61 сек для OpenWeather API...');
         await new Promise((resolve) => setTimeout(resolve, 61000));
       }
     }
@@ -86,7 +80,7 @@ export class WeatherService {
     } catch (error: any) {
       if (attemptsLeft > 1) {
         console.warn(
-          `[Ретрай] Помилка для поля ${fieldId}. Лишилось спроб: ${attemptsLeft - 1}. Рестарт через 5с...`,
+          `Помилка для поля ${fieldId}. Лишилось спроб: ${attemptsLeft - 1}`,
         );
         await new Promise((resolve) => setTimeout(resolve, 5000));
         return this.syncSingleFieldWithRetry(fieldId, attemptsLeft - 1);
