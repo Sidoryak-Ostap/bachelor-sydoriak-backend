@@ -64,17 +64,19 @@ export class StatisticsService {
   private getMeanNDVI = async (allFields: FieldDocument[]) => {
     const fieldIds = allFields.map((field) => field.id);
 
-    const lastIndices = await this.indicesModel.aggregate([
-      { $match: { fieldId: { $in: fieldIds } } },
-      { $sort: { createdAt: -1 } },
-      {
-        $group: {
-          _id: '$fieldId',
-          ndvi: { $first: '$ndvi' },
-          date: { $first: '$date' },
+    const lastIndices = await this.indicesModel
+      .aggregate([
+        { $match: { fieldId: { $in: fieldIds } } },
+        { $sort: { createdAt: -1 } },
+        {
+          $group: {
+            _id: '$fieldId',
+            ndvi: { $first: '$ndvi' },
+            date: { $first: '$date' },
+          },
         },
-      },
-    ]);
+      ])
+      .sort({ date: 1 });
 
     const totalNDVI = lastIndices.reduce(
       (sum, item) => sum + item.ndvi.mean,
