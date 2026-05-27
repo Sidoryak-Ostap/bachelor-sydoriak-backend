@@ -7,7 +7,7 @@ import { WeatherHistory, WeatherHistorySchema } from './schemas/weather.schema';
 
 @Module({
   controllers: [WeatherController],
-  exports: [WeatherService],
+  exports: [WeatherService, MongooseModule],
   providers: [WeatherService],
   imports: [
     MongooseModule.forFeature([

@@ -14,8 +14,6 @@ import {
   WeatherHistoryDocument,
 } from './schemas/weather.schema';
 
-import promiseRetry from 'promise-retry';
-
 @Injectable()
 export class WeatherService {
   private readonly apiKey = process.env.OPENWEATHERMAP_API_KEY || '';
