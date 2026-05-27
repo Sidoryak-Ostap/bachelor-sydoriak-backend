@@ -266,6 +266,9 @@ export class AuthService {
       }),
     ]);
 
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+    await this.usersService.updateRefreshToken(userId, hashedToken);
+
     return { accessToken, refreshToken };
   }
 
@@ -276,7 +279,15 @@ export class AuthService {
       });
 
       const user = await this.usersService.findById(payload.sub);
-      if (!user) throw new UnauthorizedException('User no longer exists');
+      if (!user) throw new UnauthorizedException('Access denied');
+
+      const tokenMatches = await bcrypt.compare(
+        refreshToken,
+        user?.refreshToken || '',
+      );
+
+      if (!tokenMatches)
+        throw new UnauthorizedException('Invalid refresh token');
 
       const tokens = await this.generateTokens(user.id, user.email, user.role);
 

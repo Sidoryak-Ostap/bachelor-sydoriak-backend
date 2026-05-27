@@ -33,9 +33,13 @@ export class UsersService {
     return this.userModel.findByIdAndDelete(id).exec();
   }
 
-  async findById(id: string): Promise<UserDocument | null> {
-    ``;
-    return this.userModel.findById(id).exec();
+  async findById(id: string): Promise<UserDocument> {
+    const user = await this.userModel.findById(id).exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 
   async update(id: string, data: Partial<User>): Promise<UserDocument | null> {
@@ -95,5 +99,12 @@ export class UsersService {
     }
 
     return updatedUser;
+  }
+
+  async updateRefreshToken(userId: string, token: string | null) {
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $set: { refreshToken: token } },
+    );
   }
 }
