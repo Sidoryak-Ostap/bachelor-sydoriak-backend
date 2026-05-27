@@ -1,5 +1,5 @@
 export const PLAN_PRICES = {
-  basic: 200,
-  pro: 500,
+  basic: 395,
+  pro: 836,
   starter: 0,
 };

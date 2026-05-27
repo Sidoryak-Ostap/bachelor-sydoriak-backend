@@ -27,10 +27,10 @@ export class SubscriptionService {
     }
 
     return {
-      plan: subscription.plan,
+      plan: subscription.plan ?? 'starter',
       status: subscription.status,
       nextPaymentDate: subscription.nextPaymentDate,
-      price: PLAN_PRICES[subscription.plan],
+      price: PLAN_PRICES[subscription.plan ?? 'starter'],
     };
   }
 
@@ -80,7 +80,7 @@ export class SubscriptionService {
 
       await this.subscriptionModel.findOneAndUpdate(
         { userId },
-        { subscriptionId: response.data.subscriptionId, plan },
+        { subscriptionId: response.data.subscriptionId, pendingPlan: plan },
         { upsert: true },
       );
 
@@ -133,9 +133,11 @@ export class SubscriptionService {
         {
           $set: {
             status: 'active',
+            plan: subscription.pendingPlan,
+            pedningPlan: null,
             nextPaymentDate: nextDate,
             lastAmount: amount / 100,
-            invoiceId: invoiceId,
+            invoiceId,
           },
         },
       );

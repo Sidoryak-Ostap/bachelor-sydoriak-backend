@@ -26,6 +26,13 @@ export class Subscription {
   plan: string;
 
   @Prop({
+    required: false,
+    enum: ['starter', 'basic', 'pro'],
+    default: 'starter',
+  })
+  pendingPlan: string;
+
+  @Prop({
     required: true,
     enum: ['active', 'cancelled', 'expired', 'past_due'],
     default: 'active',
