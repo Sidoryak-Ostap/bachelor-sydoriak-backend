@@ -112,7 +112,10 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(
+    @Res({ passthrough: true }) res: Response,
+    @GetUser() user: UserDocument,
+  ) {
     res.cookie('refreshToken', '', {
       httpOnly: true,
       expires: new Date(0),
@@ -120,6 +123,8 @@ export class AuthController {
       sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production',
     });
+
+    await this.authService.logout(user.id);
 
     return { message: 'Successfully logged out' };
   }
