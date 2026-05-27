@@ -61,27 +61,71 @@ export class SentinelService {
 
   @Cron(CronExpression.EVERY_WEEK)
   async handleGetVegetetaionIndices() {
-    console.log(' --- Початок синхронізації даних для індексів ---');
+    console.log(' --- Початок фонової синхронізації індексів Sentinel ---');
 
-    const allFields = await this.fieldModel.find().exec();
+    const fieldsCursor = this.fieldModel.find({}, { _id: 1 }).cursor();
+    const allFieldIds: string[] = [];
 
+    for (
+      let field = await fieldsCursor.next();
+      field != null;
+      field = await fieldsCursor.next()
+    ) {
+      allFieldIds.push(field._id.toString());
+    }
+
+    this.processSentinelQueueInMemory(allFieldIds).catch((err) =>
+      console.error('Критична помилка у фоновому пайплайні Sentinel:', err),
+    );
+
+    console.log(
+      `--- Планувальник звільнив потік. ${allFieldIds.length} полів обробляються у фоні ---`,
+    );
+  }
+
+  private async processSentinelQueueInMemory(fieldIds: string[]) {
     const chunkSize = 15;
-    for (let i = 0; i < allFields.length; i += chunkSize) {
-      const chunk = allFields.slice(i, i + chunkSize);
 
-      await Promise.all(
-        chunk.map((field: FieldDocument) =>
-          this.syncFieldIndices(field, field.id),
-        ),
+    for (let i = 0; i < fieldIds.length; i += chunkSize) {
+      const chunk = fieldIds.slice(i, i + chunkSize);
+      console.log(
+        `[Sentinel Фон] Пачка полів: ${i + 1} - ${Math.min(i + chunkSize, fieldIds.length)}`,
       );
 
-      if (i + chunkSize < allFields.length) {
-        console.log('Чекаємо 60 секунд для скидання ліміту API...');
+      await Promise.all(
+        chunk.map((id) => this.syncSingleFieldIndicesWithRetry(id, 3)),
+      );
+
+      if (i + chunkSize < fieldIds.length) {
         await new Promise((resolve) => setTimeout(resolve, 61000));
       }
     }
+    console.log(
+      '--- Фонова синхронізація індексів вегетації повністю завершена ---',
+    );
+  }
 
-    console.log('--- Отримання даних індексів вегететації заверешено ---');
+  private async syncSingleFieldIndicesWithRetry(
+    fieldId: string,
+    attemptsLeft: number,
+  ): Promise<void> {
+    try {
+      const field = await this.fieldModel.findById(fieldId).exec();
+      if (!field) return;
+
+      await this.syncFieldIndices(field, fieldId);
+    } catch (error: any) {
+      if (attemptsLeft > 1) {
+        console.warn(
+          `[Sentinel Ретрай] Збій поля ${fieldId}. Лишилось спроб: ${attemptsLeft - 1}. Новий запуск через 10с...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+        return this.syncSingleFieldIndicesWithRetry(fieldId, attemptsLeft - 1);
+      }
+      console.error(
+        `Не вдалося оновити індекси для поля ${fieldId} після всіх спроб`,
+      );
+    }
   }
 
   async getIndices(
@@ -92,7 +136,6 @@ export class SentinelService {
   ) {
     const maxRetries = 5;
 
-    console.log('Getting indices with coordinates:', coordinates);
     const token = await this.getAccessToken();
 
     const evalscript = `

@@ -29,48 +29,72 @@ export class WeatherService {
     private readonly weatherHistoryModel: Model<WeatherHistoryDocument>,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_5AM)
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async handleDailyWeatherSync() {
-    const allFields = await this.fieldModel.find().exec();
+    console.log('--- Старт фонової синхронізації погоди ---');
 
+    const fieldsCursor = this.fieldModel.find({}, { _id: 1 }).cursor();
+    const allFieldIds: string[] = [];
+
+    for (
+      let field = await fieldsCursor.next();
+      field != null;
+      field = await fieldsCursor.next()
+    ) {
+      allFieldIds.push(field._id.toString());
+    }
+
+    this.processFieldsQueueInMemory(allFieldIds).catch((err) =>
+      console.error('Помилка у фоновому процесі синхронізації:', err),
+    );
+
+    console.log(
+      `--- Планувальник звільнив потік. ${allFieldIds.length} полів обробляються асинхронно у фоні ---`,
+    );
+  }
+
+  private async processFieldsQueueInMemory(fieldIds: string[]) {
     const chunkSize = 15;
-    for (let i = 0; i < allFields.length; i += chunkSize) {
-      const chunk = allFields.slice(i, i + chunkSize);
 
-      await Promise.all(chunk.map((field) => this.syncFieldWithRetry(field)));
+    for (let i = 0; i < fieldIds.length; i += chunkSize) {
+      const chunk = fieldIds.slice(i, i + chunkSize);
+      console.log(
+        `[Фонова Черга] Обробка пачки полів: ${i + 1} - ${Math.min(i + chunkSize, fieldIds.length)}`,
+      );
 
-      if (i + chunkSize < allFields.length) {
-        console.log('Чекаємо 60 секунд для скидання ліміту API...');
+      await Promise.all(
+        chunk.map((id) => this.syncSingleFieldWithRetry(id, 3)),
+      );
+
+      if (i + chunkSize < fieldIds.length) {
+        console.log('[Фонова Черга] Очікування 61 сек для OpenWeather API...');
         await new Promise((resolve) => setTimeout(resolve, 61000));
       }
     }
-
-    console.log('--- Синхронізацію завершено ---');
+    console.log('--- Фонова синхронізація повністю завершена ---');
   }
 
-  private async syncFieldWithRetry(field: any) {
-    return promiseRetry(
-      async (retry, number) => {
-        try {
-          await this.getWeatherData(field);
-        } catch (error: any) {
-          if (error.response?.status === 429 || error.response?.status >= 500) {
-            console.warn(
-              `Помилка для поля ${field.name}. Спроба №${number}...`,
-            );
-            return retry(error);
-          }
-          console.error(
-            `Критична помилка для поля ${field.id}: ${error.message}`,
-          );
-        }
-      },
-      {
-        retries: 3,
-        minTimeout: 2000,
-        factor: 2,
-      },
-    );
+  private async syncSingleFieldWithRetry(
+    fieldId: string,
+    attemptsLeft: number,
+  ): Promise<void> {
+    try {
+      const field = await this.fieldModel.findById(fieldId).exec();
+      if (!field) return;
+
+      await this.getWeatherData(field);
+    } catch (error: any) {
+      if (attemptsLeft > 1) {
+        console.warn(
+          `[Ретрай] Помилка для поля ${fieldId}. Лишилось спроб: ${attemptsLeft - 1}. Рестарт через 5с...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return this.syncSingleFieldWithRetry(fieldId, attemptsLeft - 1);
+      }
+      console.error(
+        `[Критична Помилка] Не вдалося оновити поле ${fieldId} після 3 спроб: ${error.message}`,
+      );
+    }
   }
 
   async getWeatherData(field: FieldDocument, lang: 'en' | 'uk' = 'uk') {
