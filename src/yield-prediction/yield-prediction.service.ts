@@ -96,8 +96,6 @@ export class YieldPredictionService {
         },
       );
 
-      console.log('Predicted Yield:', predicetedYield.data);
-
       return {
         success: predicetedYield.data.success,
         predicted_yield: predicetedYield.data.predicted_yield,
