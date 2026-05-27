@@ -31,6 +31,9 @@ export class User extends Document {
   @Prop({ default: true })
   isActive: boolean;
 
+  @Prop({ type: String, select: false, required: false })
+  refreshToken: string | null;
+
   @Prop({
     type: {
       firstName: { type: String, default: '' },
