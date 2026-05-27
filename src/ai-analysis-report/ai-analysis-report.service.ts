@@ -84,42 +84,9 @@ export class AiAnalysisReportService {
                 }
     `;
 
-    //     const englishPrompt = `
-    //   You are an expert agronomic analyst for the AgroMap system.
-    //   Your task is to analyze the dynamics of satellite indices and provide a professional conclusion.
-
-    //   IMPORTANT: PROVIDE THE RESPONSE STRICTLY IN THIS LANGUAGE: ${language || 'English'}.
-
-    //   INPUT DATA:
-    //   1. Crop Type: ${cropType || 'Not specified'}
-    //   2. Analysis Date: ${new Date().toLocaleDateString()}
-    //   3. Latest Area Distribution: Excellent:${latestDistribution.excellent}%, Good:${latestDistribution.good}%, Moderate:${latestDistribution.moderate}%, Poor:${latestDistribution.poor}%
-    //   4. Historical Data (last 3 records): ${JSON.stringify(historicalData)}
-
-    //   INSTRUCTIONS:
-    //   - Compare current index values with previous ones (trends).
-    //   - Evaluate vegetation status (NDVI, EVI) and moisture levels (NDMI).
-    //   - Use SAVI to adjust for soil influence if vegetation is low.
-    //   - Consider the current month (${new Date().toLocaleString('default', { month: 'long' })}).
-    //   - Provide recommendations and risks ONLY if they are justified by the data; do not hallucinate them.
-
-    //   IMPORTANT: PROVIDE THE RESPONSE STRICTLY IN THIS LANGUAGE: ${language || 'English'}.
-
-    //   FORMAT REQUIREMENT:
-    //   Return the response STRICTLY as a JSON object. No preamble or post-text.
-    //   JSON Structure:
-    //   {
-    //     "status": "Short description of general condition (1 sentence)",
-    //     "stressLevel": "Low/Medium/High",
-    //     "analysis": "Brief analysis of index dynamics (why they are rising or falling)",
-    //     "risks": ["risk 1", "risk 2"],
-    //     "recommendations": ["advice 1", "advice 2"]
-    //   }
-    // `;
-
     try {
       const response = await this.genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         contents: [
           {
             role: 'user',
