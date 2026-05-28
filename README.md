@@ -69,7 +69,7 @@ Agromap — це система, створена для малих та сер�
 | -------- | ------------------------------------------------------------ |
 | Frontend | https://github.com/Sidoryak-Ostap/bachelor-sydoriak-frontend |
 | Backend  | поточний репозиторій                                         |
-| ML       | _(додати посилання)_                                         |
+| ML       | https://github.com/Sidoryak-Ostap/bachelor-sydoriak-ml       |
 
 ---
 
